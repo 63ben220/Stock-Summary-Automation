@@ -1,0 +1,19 @@
+{
+  "name": "stock-summary-automation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx trigger.dev@4.5.7 dev",
+    "deploy": "npx trigger.dev@4.5.7 deploy"
+  },
+  "dependencies": {
+    "@trigger.dev/sdk": "4.5.7",
+    "@anthropic-ai/sdk": "^0.65.0",
+    "nodemailer": "^6.9.0"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^6.4.0",
+    "typescript": "^5.5.0"
+  }
+}
