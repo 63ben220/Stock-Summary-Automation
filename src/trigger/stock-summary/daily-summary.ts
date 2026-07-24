@@ -76,7 +76,7 @@ async function sendEmail(subject: string, title: string, body: string) {
 
 export const dailyStockSummary = schedules.task({
   id: "daily-stock-summary",
-  cron: "53 6 * * *",
+  cron: "0 6 * * *",
   timezone: "America/Chicago",
   retry: {
     maxAttempts: 3,
