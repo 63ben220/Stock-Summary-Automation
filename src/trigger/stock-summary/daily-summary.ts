@@ -17,6 +17,13 @@ async function fetchAlphaVantage(params: Record<string, string>) {
   return res.json();
 }
 
+// Alpha Vantage returns HTTP 200 with an "Information"/"Note"/"Error Message" key
+// instead of real data when the daily quota is hit or the request is malformed.
+function isAlphaVantageLimited(data: unknown): boolean {
+  if (typeof data !== "object" || data === null) return false;
+  return "Information" in data || "Note" in data || "Error Message" in data;
+}
+
 async function synthesizeSummary(movers: unknown, news: unknown) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
@@ -95,8 +102,6 @@ export const dailyStockSummary = schedules.task({
       }),
     ]);
 
-    const summary = await synthesizeSummary(movers, news);
-
     const dateLabel = new Date().toLocaleDateString("en-US", {
       timeZone: "America/Chicago",
       weekday: "long",
@@ -104,8 +109,21 @@ export const dailyStockSummary = schedules.task({
       day: "numeric",
     });
     const title = `Daily Market Summary — ${dateLabel}`;
+
+    if (isAlphaVantageLimited(movers) || isAlphaVantageLimited(news)) {
+      await sendEmail(
+        title,
+        title,
+        "No market data was available today — Alpha Vantage's daily request quota was hit before this run. " +
+          "This normally only happens after several manual test runs on the same day; the regular scheduled run " +
+          "only uses 2 of the 25 daily requests, so tomorrow's summary should be back to normal.",
+      );
+      return { sent: true, dateLabel, dataAvailable: false };
+    }
+
+    const summary = await synthesizeSummary(movers, news);
     await sendEmail(title, title, summary);
 
-    return { sent: true, dateLabel };
+    return { sent: true, dateLabel, dataAvailable: true };
   },
 });
